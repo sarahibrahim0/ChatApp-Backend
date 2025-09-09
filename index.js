@@ -5,6 +5,8 @@ require('dotenv').config();
 const userRoute = require('./routers/userRoute');
 const chatRoute = require('./routers/chatRoute');
 const messageRoute = require('./routers/messageRoute');
+const missedCallRoute = require('./routers/missedCallRoute');
+
 const passwordRoute = require('./routers/passwordRoute');
 const { socketSetup, getIO } = require("./socket");
 const Http = require("http");
@@ -30,6 +32,8 @@ app.use('/api/users', userRoute);
 app.use('/api/chat', chatRoute);
 app.use('/api/messages', messageRoute);
 app.use('/api/password', passwordRoute);
+app.use('/api/missed-call', missedCallRoute);
+
 
 
 

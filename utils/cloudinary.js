@@ -7,11 +7,27 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// 🟢 Helper لتحديد نوع resource_type حسب نوع الميديا
+const getCloudinaryResourceType = (type) => {
+  switch (type) {
+    case "image":
+      return "image";
+    case "video":
+      return "video";
+    case "voice":   // صوتيات
+    case "file":    // ملفات PDF أو أي raw file
+      return "raw";
+    default:
+      return "image";
+  }
+};
+
+// ✅ رفع ملف واحد
 const cloudinaryUploadFile = async (filePath, folder = "chatApp") => {
   try {
     const result = await cloudinary.uploader.upload(filePath, {
       folder,
-      resource_type: "auto", // auto = يحدد هل هو image, video, raw (ملفات)
+      resource_type: "auto", // يحدد تلقائياً نوع الملف
     });
     return {
       url: result.secure_url,
@@ -35,9 +51,10 @@ const cloudinaryUploadManyFiles = async (files, folder = "chatApp") => {
   }
 };
 
-// ✅ حذف ملف واحد
-const cloudinaryRemoveFile = async (publicId, resourceType = "image") => {
+// ✅ حذف ملف واحد حسب نوعه
+const cloudinaryRemoveFile = async (publicId, type = "image") => {
   try {
+    const resourceType = getCloudinaryResourceType(type);
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
@@ -47,13 +64,23 @@ const cloudinaryRemoveFile = async (publicId, resourceType = "image") => {
   }
 };
 
-// ✅ حذف مجموعة ملفات
-const cloudinaryRemoveManyFiles = async (publicIds, resourceType = "image") => {
+// ✅ حذف مجموعة ملفات حسب نوعها
+const cloudinaryRemoveManyFiles = async (files) => {
   try {
-    const result = await cloudinary.api.delete_resources(publicIds, {
-      resource_type: resourceType,
-    });
-    return result;
+    // files = [{ publicId, type }]
+    if (!Array.isArray(files)) return;
+    const filesByType = files.reduce((acc, file) => {
+      const resourceType = getCloudinaryResourceType(file.type);
+      if (!acc[resourceType]) acc[resourceType] = [];
+      acc[resourceType].push(file.publicId);
+      return acc;
+    }, {});
+
+    const promises = Object.entries(filesByType).map(([resourceType, publicIds]) =>
+      cloudinary.api.delete_resources(publicIds, { resource_type: resourceType })
+    );
+
+    return Promise.all(promises);
   } catch (error) {
     throw new Error("Internal server error (cloudinaryRemoveManyFiles)");
   }

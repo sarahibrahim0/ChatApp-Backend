@@ -262,9 +262,11 @@ const editUserProfile = async (req, res, next) => {
       const uploadedImage = await cloudinaryUploadFile(req.file.path);
       await fs.unlink(req.file.path);
 
+      console.log(uploadedImage)
+
       user.profilePhoto = {
-        url: uploadedImage.secure_url,
-        publicId: uploadedImage.public_id,
+        url: uploadedImage.url,
+        publicId: uploadedImage.publicId,
       };
     }
 
@@ -310,7 +312,7 @@ const deleteUserProfile = async (req,res,next)=>{
   await User.findByIdAndUpdate(userId , {
   name: "Deleted User",
   deletedEmail: user.email,
-  email: null,
+  email: `deleted_${userId}@example.com`, // بديل للإيميل عشان يفضل unique
   phone: "",
   gender: "",
   birthDate: null,
