@@ -15,6 +15,10 @@ const MissedCallSchema = new mongoose.Schema({
     type: String, // اسم اللي اتصل
     required: true,
   },
+  callType:{
+  type : String,
+  required: true
+  },
   timestamp: {
     type: Date,
     default: Date.now,

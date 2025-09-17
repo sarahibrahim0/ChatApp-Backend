@@ -6,8 +6,7 @@ const bcrypt = require("bcrypt");
 const asyncHandler = require("express-async-handler");
 
 
-const forgetPasswordCtrl = asyncHandler(async(req,res , next) =>{
-    try{
+const forgetPasswordCtrl = asyncHandler(async(req,res ) =>{
         const {email} = req.body;
         const user = await User.findOne({email});
         if(!user){
@@ -39,14 +38,9 @@ if(user.isDeleted){
   await sendEmail(user.email, "Reset Password", htmlTemplate);
   //response to the client
   res.status(200).json({ message:  user.email });
-            
-    }catch(error){
-        return res.status(500).json({ message: error.message });
-    }
 });
 
- const resetPasswordCtrl = asyncHandler(async(req,res,next)=>{
-    try{
+ const resetPasswordCtrl = asyncHandler(async(req,res)=>{
         const {userId , token} = req.params;
         const user = await User.findById(userId);
         if(!user){
@@ -72,11 +66,7 @@ if(user.isDeleted){
         
             res.status(200).json({message : "Password reset successfully"});
 
-    }
-    catch(error){
-    return res.status(500).json({ message: error.message });
-    }
-
+    
 });
 
 module.exports = {forgetPasswordCtrl, resetPasswordCtrl}

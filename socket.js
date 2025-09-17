@@ -17,20 +17,27 @@ const socketSetup = (server) => {
 
   io.on('connection', (socket) => {
 
-    // ------------------- Online Users -------------------
-    socket.on('addNewUser', (userId) => {
-      onlineUsers = onlineUsers.filter(user => user.userId !== userId); 
-      onlineUsers.push({ userId, socketId: socket.id });
+socket.on("addNewUser", async (userId) => {
+  onlineUsers = onlineUsers.filter(user => user.userId !== userId); 
+  onlineUsers.push({ userId, socketId: socket.id });
 
-      users[userId] = socket.id;
+  users[userId] = socket.id;
 
-      console.log('👤 Current online users:', onlineUsers.map(user => ({
-        userId: user.userId.toString(),
-        socketId: user.socketId
-      })));
+  console.log('👤 Current online users:', onlineUsers);
 
-      io.emit("getOnlineUsers", onlineUsers);  
-    });
+  io.emit("getOnlineUsers", onlineUsers);  
+
+  // 🟢 هنا بقى async/await يشتغل عادي
+  try {
+    const calls = await MissedCall.find({ to: userId, seen: false })
+      .populate("from", "name email profilePhoto")
+      .sort({ timestamp: -1 });
+
+    io.to(socket.id).emit("missed-calls-initial", calls);
+  } catch (err) {
+    console.error("Error fetching missed calls:", err);
+  }
+});
 
     // ------------------- Chat Events -------------------
     socket.on('joinChat', (chatId) => {
@@ -40,10 +47,13 @@ const socketSetup = (server) => {
 
     socket.on('typing', ({ chatId, userId }) => {
       socket.to(chatId).emit('userTyping', { chatId, userId });
+      console.log(chatId  +  userId + 'typing'  )
     });
 
     socket.on('stopTyping', ({ chatId, userId }) => {
       socket.to(chatId).emit('userStopTyping', { chatId, userId });
+          console.log(chatId  +  userId + 'typingStopped'  )
+
     });
 
     socket.on('sendMessage', async (data) => {
@@ -64,7 +74,6 @@ const socketSetup = (server) => {
     const toSocketId = users[to];
 
     if (toSocketId) {
-      console.log(toSocketId);
       io.to(toSocketId).emit("incoming-call", { from, offer, type,name   });
     } else {
       
@@ -73,6 +82,7 @@ const socketSetup = (server) => {
           to,
           from,
           name,
+          callType: type
         });
         console.log("Missed call saved in DB");
       } catch (err) {
@@ -80,19 +90,30 @@ const socketSetup = (server) => {
       }
     }
   });
-// لو الطرف التاني قبل
-// socket.on("accept-call", ({ to, offer, from }) => {
-//   const toSocketId = users[to];
-//   if (toSocketId) {
-//     io.to(toSocketId).emit("call-made", { offer, from });
-//   }
-// });
 
 // لو رفض
 socket.on("reject-call", ({ to }) => {
   const toSocketId = users[to];
   if (toSocketId) {
     io.to(toSocketId).emit("end-call");
+  }
+});
+
+
+socket.on("mark-missed-calls-seen", async (userId) => {
+  try {
+    await MissedCall.updateMany(
+      { to: userId, seen: false },
+      { $set: { seen: true } }
+    );
+
+    // رجّع رد للكلاينت اللي عمل Seen
+    io.to(socket.id).emit("marked-seen");
+
+    // ابعت broadcast لباقي الكلاينتس (لو مهم)
+    // socket.broadcast.emit("missed-calls-updated", userId);
+  } catch (err) {
+    console.error("Error marking missed calls as seen:", err);
   }
 });
 
@@ -108,9 +129,11 @@ socket.on("reject-call", ({ to }) => {
     });
 
     // تبادل الـ ICE Candidates
-    socket.on("ice-candidate", ({ toUserId, candidate, from }) => {
-      const toSocketId = users[toUserId];
-            console.log(toSocketId+ 'ice')
+    socket.on("ice-candidate", ({ to, candidate, from }) => {
+      const toSocketId = users[to];
+            console.log(toSocketId+ 'ice');
+            console.log("users object in server:", users);
+
 
       if (toSocketId) {
         io.to(toSocketId).emit("ice-candidate", { candidate, from });

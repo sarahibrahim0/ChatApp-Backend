@@ -1,16 +1,15 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const {User}  = require("../models/user");
-const Chat = require("../models/chat");
-
 const { validationResult } = require("express-validator");
 const VerificationToken = require("../models/verificationToken");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
 const { cloudinaryUploadFile, cloudinaryRemoveFile } = require("../utils/cloudinary");
 const fs = require("fs/promises"); // بدل fs العادي
+const asyncHandler = require("express-async-handler");
 
-const registerUser = async (req, res, next) => {
+const registerUser = asyncHandler(async(req,res , next) =>{
   const errors = validationResult(req).array();
   if (errors.length > 0) {
     return res.status(400).json({ message: errors[0].msg });
@@ -69,7 +68,9 @@ const registerUser = async (req, res, next) => {
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
-};
+}
+
+);
 
 /**
  *@description verify user account
@@ -82,7 +83,7 @@ const registerUser = async (req, res, next) => {
  *
  */
 
-const verifyUserAccountCtrl = async (req, res) => {
+const verifyUserAccountCtrl = asyncHandler(async(req,res , next) =>{
   try{
     const user = await User.findById(req.params.userId);
   if (!user) {
@@ -112,9 +113,10 @@ setTimeout(async () => {
   catch(error){
   res.status(500).json({message: 'Internal server error'})
   }
-};
+}
+);
 
-const loginUser = async (req, res, next) => {
+const loginUser = asyncHandler(async(req,res , next) =>{
 
   const errors = validationResult(req).array();
   if (errors.length > 0) {
@@ -131,7 +133,7 @@ const loginUser = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
  if (user.isDeleted) {
-  return res.status(403).json({ message: "This account has been deleted." });
+  return res.status(403).json({ message: "This account has been deleted" });
 }
 if (!user.isActive) {
  return res.status(403).json({
@@ -195,9 +197,9 @@ if (!user.isActive) {
 
     return res.status(500).json({ message: error.message });
   }
-};
+});
 
-const getUser = (req, res, next) => {
+const getUser = asyncHandler(async(req,res , next) =>{
   const userId = req.params.id;
   User.findById(userId)
     .then(user => {
@@ -209,9 +211,9 @@ const getUser = (req, res, next) => {
     .catch((err) => {
       res.status(500).json({ message: "internal server error" });
     });
-};
+});
 
-const getUsers = (req, res, next) => {
+const getUsers = asyncHandler(async(req,res , next) =>{
   User.find({},'name')
     .then((users) => {
       if (!users) {
@@ -222,9 +224,10 @@ const getUsers = (req, res, next) => {
     .catch((err) => {
       res.status(500).json({ message: err.message });
     });
-};
+})
 
-const searchUserByEmail = async(req,res) => {
+const searchUserByEmail = asyncHandler(async(req,res , next) =>{
+  
     const email = req.query.email;
       if(!email){
       return res.status(400).json({ message: 'Email is required' });
@@ -240,9 +243,9 @@ const searchUserByEmail = async(req,res) => {
     res.status(501).json({ message: 'Server error' });
   }
 
-}
+});
 
-const editUserProfile = async (req, res, next) => {
+const editUserProfile = asyncHandler (async(req, res, next) => {
   const userId = req.params.userId;
 
   try {
@@ -293,9 +296,9 @@ const editUserProfile = async (req, res, next) => {
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
-};
+});
 
-const deleteUserProfile = async (req,res,next)=>{
+const deleteUserProfile = asyncHandler(async(req,res , next) =>{
 
   const userId = req.user._id.toString(); // جاي من التوكن بعد التحقق
   try{
@@ -331,9 +334,9 @@ const deleteUserProfile = async (req,res,next)=>{
    catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
+});
 
-const deactivateUser = async (req, res) => {
+const deactivateUser = asyncHandler(async(req,res ) =>{
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -346,10 +349,10 @@ const deactivateUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+});
 
 // Activate user
-const activateUser = async (req, res) => {
+const activateUser = asyncHandler(async(req,res , next) =>{
   try {
     const user = await User.findById(req.params.id);
 
@@ -379,7 +382,7 @@ const activateUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+});
 
 module.exports = {
   registerUser,

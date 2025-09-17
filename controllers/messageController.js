@@ -1,7 +1,9 @@
 const ChatModel = require("../models/chat");
 const MessageModel = require("../models/message");
+const asyncHandler = require("express-async-handler");
+
 const { cloudinaryRemoveFile, cloudinaryRemoveManyFiles } = require("../utils/cloudinary"); // أو حسب مكان الملف
-const createMessage = async (req, res, onlineUsers, socket) => {
+const createMessage = asyncHandler (async (req, res, onlineUsers, socket ) => {
   const { receiverId, senderId, text , media  } = req.body;
   const io = req.io;
 
@@ -84,10 +86,10 @@ if ((!text || text.trim().length === 0) &&
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
-};
+});
 
 
-const getMessages = async(req,res,next)=>{
+const getMessages = asyncHandler(async(req,res , next) =>{
   try{
     const {chatId} = req.params;
     const messages = await MessageModel.find({chatId}).populate('senderId receiverId');
@@ -99,10 +101,9 @@ const getMessages = async(req,res,next)=>{
   }catch(error){
     res.status(500).json(error.message);
   }
-};
+})
 
-
-const deleteMessage = async (req, res) => {
+const deleteMessage = asyncHandler(async(req,res , next) =>{
   try {
     const { msgId } = req.params;
     const userId = req.user._id;
@@ -160,7 +161,7 @@ const deleteMessage = async (req, res) => {
     console.error("deleteMessage error:", error);
     res.status(500).json({ message: "حدث خطأ ما" });
   }
-};
+});
 
 
 

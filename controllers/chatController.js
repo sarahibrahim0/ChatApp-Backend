@@ -1,7 +1,8 @@
 
 
 const ChatModel = require("../models/chat");
-const createChat = async (req, res, next) => {
+const asyncHandler = require("express-async-handler");
+const createChat = asyncHandler(async(req,res , next) =>{
   const { firstId, secondId } = req.body;
   try {
    if (!firstId || !secondId){
@@ -28,9 +29,9 @@ const createChat = async (req, res, next) => {
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
   }
-};
+});
 
-const findUserChats = async (req, res, next) => {
+const findUserChats = asyncHandler(async(req,res , next) =>{
 
   const userId = req.params.id;
   try {
@@ -43,9 +44,9 @@ const findUserChats = async (req, res, next) => {
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
   }
-};
+});
 
-const findChat = async (req, res, next) => {
+const findChat = asyncHandler(async(req,res , next) =>{
   const { firstId, secondId } = req.params;
 
   try {
@@ -58,7 +59,7 @@ const findChat = async (req, res, next) => {
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
   }
-};
+});
 
 module.exports = {
   createChat,
